@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kid's Alphabet & Number Learner</title>
+    <!-- Tailwind CSS via CDN for a single-file portable solution -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;900&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #0a0a0a;
+        }
+        #display-char { 
+            font-size: min(80vw, 80vh); 
+        }
+        .animate-pulse-slow {
+            animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+    </style>
+</head>
+<body class="text-white overflow-hidden select-none cursor-pointer">
+    <div id="app" class="fixed inset-0 flex items-center justify-center">
+        <!-- Start Screen: Required to unlock browser audio -->
+        <div id="start-screen" class="text-center animate-pulse-slow">
+            <h1 class="text-emerald-400 text-4xl md:text-6xl font-bold mb-4 tracking-tight">
+                Alphabet & Numbers
+            </h1>
+            <p class="text-neutral-400 text-xl font-medium">
+                Click or tap anywhere to start
+            </p>
+        </div>
+
+        <!-- Main Display Area -->
+        <div id="main-display" class="hidden relative w-full h-full flex items-center justify-center">
+            <span id="display-char" class="font-black leading-none transition-all duration-100 ease-out" style="text-shadow: 0 0 40px rgba(255,255,255,0.1)"></span>
+            <p id="placeholder" class="text-neutral-600 text-2xl font-medium animate-bounce">
+                Press a key!
+            </p>
+            
+            <!-- Subtle Guide -->
+            <div class="absolute bottom-8 left-0 right-0 text-center">
+                <p class="text-neutral-700 text-sm uppercase tracking-widest font-mono">
+                    Press A-Z or 0-9
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * Kid's Alphabet & Number Learner
+         * A standalone, single-file interactive learning tool.
+         */
+
+        let isReady = false;
+        let currentVoice = null;
+        const numberWords = {
+            '0': 'Zero', '1': 'One', '2': 'Two', '3': 'Three', '4': 'Four',
+            '5': 'Five', '6': 'Six', '7': 'Seven', '8': 'Eight', '9': 'Nine'
+        };
+
+        // Initialize Speech Synthesis Voices
+        function loadVoices() {
+            const voices = window.speechSynthesis.getVoices();
+            // Priority list for natural sounding English voices
+            currentVoice = voices.find(v => v.name.includes('Google US English')) ||
+                           voices.find(v => v.name.includes('Samantha')) ||
+                           voices.find(v => v.lang === 'en-US') ||
+                           voices[0];
+        }
+
+        // Handle voice loading (some browsers load them asynchronously)
+        if (window.speechSynthesis.onvoiceschanged !== undefined) {
+            window.speechSynthesis.onvoiceschanged = loadVoices;
+        }
+        loadVoices();
+
+        /**
+         * Pronounce text using the Web Speech API
+         * @param {string} text - The text to speak
+         */
+        function speak(text) {
+            if (!window.speechSynthesis) return;
+
+            // Cancel any ongoing speech to ensure instant feedback
+            window.speechSynthesis.cancel();
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            if (currentVoice) utterance.voice = currentVoice;
+            
+            // Kid-friendly tuning
+            utterance.pitch = 1.2; 
+            utterance.rate = 0.9;
+            utterance.lang = 'en-US';
+
+            window.speechSynthesis.speak(utterance);
+        }
+
+        /**
+         * Handle keyboard or simulated input
+         * @param {string} key - The key character
+         */
+        function handleInput(key) {
+            const upperKey = key.toUpperCase();
+            
+            // Filter for A-Z and 0-9 only
+            if (/^[A-Z0-9]$/.test(upperKey)) {
+                const display = document.getElementById('display-char');
+                const placeholder = document.getElementById('placeholder');
+                
+                // Update Visuals
+                display.textContent = upperKey;
+                placeholder.classList.add('hidden');
+                
+                // Determine Pronunciation
+                let textToSpeak = upperKey;
+                if (/^[0-9]$/.test(upperKey)) {
+                    textToSpeak = numberWords[upperKey];
+                }
+                
+                speak(textToSpeak);
+            }
+        }
+
+        /**
+         * Unlock audio and transition to main interface
+         */
+        function startApp() {
+            if (isReady) return;
+            isReady = true;
+            
+            // UI Transition
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('main-display').classList.remove('hidden');
+            
+            // Initial sound to confirm audio is working
+            speak("Let's learn!");
+        }
+
+        // Event Listeners
+        document.body.addEventListener('click', startApp);
+        document.body.addEventListener('touchstart', startApp);
+        
+        window.addEventListener('keydown', (e) => {
+            // Any key press can also start the app
+            if (!isReady) startApp();
+            handleInput(e.key);
+        });
+    </script>
+</body>
+</html>
+
