@@ -26,6 +26,14 @@
 </head>
 <body class="text-white overflow-hidden select-none cursor-pointer">
     <div id="app" class="fixed inset-0 flex items-center justify-center">
+        <!-- Hidden input to trigger mobile keyboard -->
+        <input type="text" id="mobile-keyboard-trigger" 
+               class="absolute opacity-0 pointer-events-none" 
+               autocomplete="off" 
+               autocorrect="off" 
+               autocapitalize="off" 
+               spellcheck="false">
+
         <!-- Start Screen: Required to unlock browser audio -->
         <div id="start-screen" class="text-center animate-pulse-slow">
             <h1 class="text-emerald-400 text-4xl md:text-6xl font-bold mb-4 tracking-tight">
@@ -49,6 +57,11 @@
                     Press A-Z or 0-9
                 </p>
             </div>
+
+            <!-- Mobile Keyboard Toggle -->
+            <button id="keyboard-toggle" class="absolute top-4 right-4 p-3 bg-neutral-800/50 rounded-full hover:bg-neutral-700 transition-colors hidden">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-neutral-400"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="M6 8h.01"/><path d="M10 8h.01"/><path d="M14 8h.01"/><path d="M18 8h.01"/><path d="M8 12h.01"/><path d="M12 12h.01"/><path d="M16 12h.01"/><path d="M7 16h10"/></svg>
+            </button>
         </div>
     </div>
 
@@ -60,6 +73,9 @@
 
         let isReady = false;
         let currentVoice = null;
+        const inputTrigger = document.getElementById('mobile-keyboard-trigger');
+        const keyboardToggle = document.getElementById('keyboard-toggle');
+
         const numberWords = {
             '0': 'Zero', '1': 'One', '2': 'Two', '3': 'Three', '4': 'Four',
             '5': 'Five', '6': 'Six', '7': 'Seven', '8': 'Eight', '9': 'Nine'
@@ -138,21 +154,50 @@
             // UI Transition
             document.getElementById('start-screen').classList.add('hidden');
             document.getElementById('main-display').classList.remove('hidden');
+            keyboardToggle.classList.remove('hidden');
+            
+            // Focus input to trigger keyboard on mobile
+            inputTrigger.focus();
             
             // Initial sound to confirm audio is working
             speak("Let's learn!");
         }
 
         // Event Listeners
-        document.body.addEventListener('click', startApp);
-        document.body.addEventListener('touchstart', startApp);
+        document.body.addEventListener('click', (e) => {
+            if (!isReady) {
+                startApp();
+            } else if (e.target.closest('#keyboard-toggle')) {
+                inputTrigger.focus();
+            } else {
+                // Clicking anywhere else also re-focuses the keyboard
+                inputTrigger.focus();
+            }
+        });
+
+        document.body.addEventListener('touchstart', (e) => {
+            if (!isReady) {
+                startApp();
+            } else if (!e.target.closest('#keyboard-toggle')) {
+                inputTrigger.focus();
+            }
+        });
         
         window.addEventListener('keydown', (e) => {
             // Any key press can also start the app
             if (!isReady) startApp();
             handleInput(e.key);
         });
+
+        // Handle input from the hidden field (mobile keyboard)
+        inputTrigger.addEventListener('input', (e) => {
+            const val = e.target.value;
+            if (val.length > 0) {
+                handleInput(val[val.length - 1]);
+                // Clear the input so it's ready for the next character
+                e.target.value = '';
+            }
+        });
     </script>
 </body>
 </html>
-
